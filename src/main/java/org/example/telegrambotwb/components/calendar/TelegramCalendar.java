@@ -31,16 +31,24 @@ public class TelegramCalendar implements BotCommands {
         CalendarCallbackDto calendarCallbackNextDto = new CalendarCallbackDto(NEXT_PREFIX, year, month);
         String resultNext = jsonMapper.writeValueAsString(calendarCallbackNextDto);
 
+        CalendarCallbackDto calendarCallbackIgnoreDto = new CalendarCallbackDto(IGNORE_PREFIX);
+        String resultIgnore = jsonMapper.writeValueAsString(calendarCallbackIgnoreDto);
+
+
         List<InlineKeyboardButton> headerRow = List.of(
 
                 InlineKeyboardButton.builder().text("⬅️").callbackData(resultPrev).build(),
-                InlineKeyboardButton.builder().text(YearMonth.of(year,month).getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + YearMonth.of(year,month).getYear()).callbackData(IGNORE_PREFIX).build(),
+                InlineKeyboardButton.builder().text(YearMonth.of(year,month).getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + YearMonth.of(year,month).getYear()).callbackData(resultIgnore).build(),
                 InlineKeyboardButton.builder().text("➡️").callbackData(resultNext).build()
         );
 
         //footer calendar
+
+        CalendarCallbackDto calendarCallbackCancelDto = new CalendarCallbackDto(CANCEL_PREFIX, year, month);
+        String resultCancel = jsonMapper.writeValueAsString(calendarCallbackCancelDto);
+
         List<InlineKeyboardButton> footerRow = List.of(
-                InlineKeyboardButton.builder().text("❌").callbackData(CANCEL_PREFIX).build()
+                InlineKeyboardButton.builder().text("❌").callbackData(resultCancel).build()
         );
 
         List<List<InlineKeyboardButton>> buttons = List.of(

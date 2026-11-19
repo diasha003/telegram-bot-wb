@@ -21,5 +21,8 @@ public class CalendarCallbackDto {
     @JsonProperty("m")
     private  Integer month;
 
+    public CalendarCallbackDto(String message){
+        receivedMessage = message;
+    }
 
 }

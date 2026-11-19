@@ -86,7 +86,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
     private void handleCallbackQuery(CallbackQuery callbackQuery){
 
-        System.out.println(callbackQuery.getData());
+        //System.out.println(callbackQuery.getData());
         CalendarCallbackDto callbackData = jsonMapper.readValue(callbackQuery.getData(), CalendarCallbackDto.class);
 
         Long chatId = callbackQuery.getMessage().getChatId();
@@ -103,6 +103,10 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
             case NEXT_PREFIX:
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
                 editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), false);
+            case IGNORE_PREFIX:
+                return;
+            case CANCEL_PREFIX:
+                editCalendar(chatId, messageId, this.year , this.month, false);
             default:
                 System.out.println("unexpected message");
         }
