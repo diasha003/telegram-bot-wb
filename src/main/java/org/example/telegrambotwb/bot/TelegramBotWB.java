@@ -4,6 +4,7 @@ import org.example.telegrambotwb.components.BotCommands;
 import org.example.telegrambotwb.components.calendar.TelegramCalendar;
 import org.example.telegrambotwb.config.bot.BotConfig;
 import org.example.telegrambotwb.dto.CalendarCallbackDto;
+import org.example.telegrambotwb.reports.ReportsService;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
@@ -17,7 +18,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.ZoneOffset;
 
 @Component
 public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands {
@@ -25,12 +25,14 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     private final BotConfig botConfig;
     private final TelegramCalendar telegramCalendar;
     private final JsonMapper jsonMapper;
+    private final ReportsService reportsService;
 
     private short year;
     private byte month;
 
 
-    public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper) {
+    public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper, ReportsService reportsService) {
+        this.reportsService = reportsService;
 
         LocalDate now = LocalDate.now();
         year = (short) now.getYear();
@@ -108,6 +110,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
                 editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
                 break;
             case IGNORE_PREFIX:
+                reportsService.getAllReports();
                 return;
             case CANCEL_PREFIX:
                 editCalendar(chatId, messageId, this.year , this.month, callbackData.getShowWeekList());
