@@ -1,4 +1,4 @@
-package org.example.telegrambotwb.config;
+package org.example.telegrambotwb.config.bot;
 
 import org.example.telegrambotwb.bot.TelegramBotWB;
 import org.springframework.context.event.ContextRefreshedEvent;

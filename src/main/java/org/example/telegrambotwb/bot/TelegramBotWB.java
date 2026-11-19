@@ -1,25 +1,44 @@
 package org.example.telegrambotwb.bot;
 
 import org.example.telegrambotwb.components.BotCommands;
-import org.example.telegrambotwb.config.BotConfig;
+import org.example.telegrambotwb.components.calendar.TelegramCalendar;
+import org.example.telegrambotwb.config.bot.BotConfig;
+import org.example.telegrambotwb.dto.CalendarCallbackDto;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 
 @Component
 public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands {
 
     private final BotConfig botConfig;
+    private final TelegramCalendar telegramCalendar;
+    private final JsonMapper jsonMapper;
+
+    private int year;
+    private int month;
 
 
-    public TelegramBotWB(BotConfig botConfig) {
+    public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper) {
+
+        LocalDate nowUtc = LocalDate.now(ZoneOffset.UTC);
+        year = nowUtc.getYear();
+        month = nowUtc.getMonth().getValue();
 
         this.botConfig = botConfig;
+        this.telegramCalendar = telegramCalendar;
+        this.jsonMapper = jsonMapper;
 
         try {
             this.execute(new SetMyCommands(LIST_OF_COMMAND, new BotCommandScopeDefault(), null));
@@ -32,7 +51,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     @Override
     public void onUpdateReceived(Update update) {
 
-        long chatId;
+        Long chatId;
         String messageText;
 
         if(update.hasMessage()){
@@ -41,32 +60,52 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
             if(update.getMessage().hasText()){
                 messageText = update.getMessage().getText();
-                botAnswerUtils(messageText, chatId);
+                handleCommand(messageText, chatId);
             }
 
         } else if (update.hasCallbackQuery()){
 
-            chatId = update.getCallbackQuery().getMessage().getChatId();
-            messageText = update.getCallbackQuery().getData();
-
-            botAnswerUtils(messageText, chatId);
+            handleCallbackQuery(update.getCallbackQuery());
 
         }
     }
 
 
-    private void botAnswerUtils(String receivedMessage, long chatId){
+
+    private void handleCommand(String receivedMessage, long chatId){
 
         switch (receivedMessage){
             case "/start":
                 startCommand(chatId);
-                System.out.println("/start");
                 break;
             default:
                 System.out.println("unexpected message");
         }
 
     }
+
+    private void handleCallbackQuery(CallbackQuery callbackQuery){
+
+        System.out.println(callbackQuery.getData());
+        CalendarCallbackDto callbackData = jsonMapper.readValue(callbackQuery.getData(), CalendarCallbackDto.class);
+
+        Long chatId = callbackQuery.getMessage().getChatId();
+        String messageText = callbackData.getReceivedMessage();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+
+        switch (messageText){
+            case PREV_PREFIX:
+
+                YearMonth targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).minusMonths(1);
+                editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), false);
+
+                break;
+            default:
+                System.out.println("unexpected message");
+        }
+
+    }
+
 
 
     private void startCommand(long chatId){
@@ -83,12 +122,29 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
 
         sendMessage.setText(text);
+        sendMessage.setReplyMarkup(telegramCalendar.createCalendar(year, month, false));
 
         try {
             execute(sendMessage);
             System.out.println("Reply sent");
         } catch (TelegramApiException exception){
             System.out.println(exception.getMessage());
+        }
+
+    }
+
+
+    private void editCalendar(Long chatId, Integer messageId, int yearNew, int monthNew, boolean nextShowWeekListState ){
+
+        EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+        editMessageReplyMarkup.setChatId(chatId);
+        editMessageReplyMarkup.setMessageId(messageId);
+        editMessageReplyMarkup.setReplyMarkup(telegramCalendar.createCalendar(yearNew, monthNew, nextShowWeekListState));
+
+        try {
+            execute(editMessageReplyMarkup);
+        } catch (TelegramApiException e){
+            e.printStackTrace();
         }
 
     }

@@ -1,37 +1,43 @@
 package org.example.telegrambotwb.components.calendar;
 
+import org.example.telegrambotwb.components.BotCommands;
+import org.example.telegrambotwb.dto.CalendarCallbackDto;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import tools.jackson.databind.json.JsonMapper;
 import java.time.*;
+import java.time.format.TextStyle;
 import java.util.*;
 
 @Component
-public class TelegramCalendar {
+public class TelegramCalendar implements BotCommands {
 
-    public static final String IGNORE_PREFIX = "cal_ignore;";
-    public static final String PREV_PREFIX = "cal_prev;";
-    public static final String NEXT_PREFIX = "cal_next;";
-    public static final String CANCEL_PREFIX = "cal_cancel;";
-    public static final String DAY_PREFIX = "cal_day;";
-    public static final String TOGGLE_WEEKS_PREFIX = "cal_toggle_weeks;";
+    private final JsonMapper jsonMapper;
 
+    public TelegramCalendar(JsonMapper jsonMapper) {
+        this.jsonMapper = jsonMapper;
+    }
 
     public InlineKeyboardMarkup createCalendar(int year, int month, boolean showWeekList) {
 
         //periods of weeks
         InlineKeyboardButton periodsButton = InlineKeyboardButton.builder().text("Выбрать неделю:").callbackData(TOGGLE_WEEKS_PREFIX).build();
 
+        CalendarCallbackDto calendarCallbackDto = new CalendarCallbackDto(PREV_PREFIX, year, month);
+        String result = jsonMapper.writeValueAsString(calendarCallbackDto);
+
         //header calendar
         List<InlineKeyboardButton> headerRow = List.of(
-                InlineKeyboardButton.builder().text("prev").callbackData(PREV_PREFIX).build(),
-                InlineKeyboardButton.builder().text("current").callbackData(IGNORE_PREFIX).build(),
-                InlineKeyboardButton.builder().text("next").callbackData(NEXT_PREFIX).build()
+
+                InlineKeyboardButton.builder().text("⬅️").callbackData(result).build(),
+                InlineKeyboardButton.builder().text(YearMonth.of(year,month).getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + YearMonth.of(year,month).getYear()).callbackData(IGNORE_PREFIX).build(),
+                InlineKeyboardButton.builder().text("➡️").callbackData(NEXT_PREFIX).build()
         );
 
         //footer calendar
         List<InlineKeyboardButton> footerRow = List.of(
-                InlineKeyboardButton.builder().text("cancel").callbackData(CANCEL_PREFIX).build()
+                InlineKeyboardButton.builder().text("❌").callbackData(CANCEL_PREFIX).build()
         );
 
         List<List<InlineKeyboardButton>> buttons = List.of(

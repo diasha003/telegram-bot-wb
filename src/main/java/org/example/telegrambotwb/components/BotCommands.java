@@ -13,4 +13,11 @@ public interface BotCommands {
           new BotCommand("/help", "bot info")
   );
 
+  String IGNORE_PREFIX = "cal_ignore";
+  String PREV_PREFIX = "cal_prev";
+  String NEXT_PREFIX = "cal_next";
+  String CANCEL_PREFIX = "cal_cancel";
+  String DAY_PREFIX = "cal_day";
+  String TOGGLE_WEEKS_PREFIX = "cal_toggle_weeks";
+
 }
