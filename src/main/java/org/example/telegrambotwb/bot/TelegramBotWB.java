@@ -93,13 +93,16 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         String messageText = callbackData.getReceivedMessage();
         Integer messageId = callbackQuery.getMessage().getMessageId();
 
+        YearMonth targetData;
+
         switch (messageText){
             case PREV_PREFIX:
-
-                YearMonth targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).minusMonths(1);
+                targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).minusMonths(1);
                 editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), false);
-
                 break;
+            case NEXT_PREFIX:
+                targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
+                editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), false);
             default:
                 System.out.println("unexpected message");
         }
