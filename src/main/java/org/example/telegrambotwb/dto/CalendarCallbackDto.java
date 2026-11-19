@@ -16,10 +16,13 @@ public class CalendarCallbackDto {
     private String receivedMessage;
 
     @JsonProperty("y")
-    private Integer year;
+    private short year;
 
     @JsonProperty("m")
-    private  Integer month;
+    private byte month;
+
+    @JsonProperty("s")
+    private byte showWeekList;
 
     public CalendarCallbackDto(String message){
         receivedMessage = message;

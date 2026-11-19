@@ -26,15 +26,15 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     private final TelegramCalendar telegramCalendar;
     private final JsonMapper jsonMapper;
 
-    private int year;
-    private int month;
+    private short year;
+    private byte month;
 
 
     public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper) {
 
-        LocalDate nowUtc = LocalDate.now(ZoneOffset.UTC);
-        year = nowUtc.getYear();
-        month = nowUtc.getMonth().getValue();
+        LocalDate now = LocalDate.now();
+        year = (short) now.getYear();
+        month = (byte) now.getMonth().getValue();
 
         this.botConfig = botConfig;
         this.telegramCalendar = telegramCalendar;
@@ -96,17 +96,22 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         YearMonth targetData;
 
         switch (messageText){
+            case TOGGLE_WEEKS_PREFIX:
+                editCalendar(chatId, messageId, callbackData.getYear(), callbackData.getMonth(), (byte) (callbackData.getShowWeekList() == 1 ? 0: 1));
+                break;
             case PREV_PREFIX:
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).minusMonths(1);
-                editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), false);
+                editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
                 break;
             case NEXT_PREFIX:
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
-                editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), false);
+                editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
+                break;
             case IGNORE_PREFIX:
                 return;
             case CANCEL_PREFIX:
-                editCalendar(chatId, messageId, this.year , this.month, false);
+                editCalendar(chatId, messageId, this.year , this.month, callbackData.getShowWeekList());
+                break;
             default:
                 System.out.println("unexpected message");
         }
@@ -129,7 +134,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
 
         sendMessage.setText(text);
-        sendMessage.setReplyMarkup(telegramCalendar.createCalendar(year, month, false));
+        sendMessage.setReplyMarkup(telegramCalendar.createCalendar(year, month, (byte) 0));
 
         try {
             execute(sendMessage);
@@ -141,17 +146,17 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     }
 
 
-    private void editCalendar(Long chatId, Integer messageId, int yearNew, int monthNew, boolean nextShowWeekListState ){
+    private void editCalendar(Long chatId, Integer messageId, int yearNew, int monthNew, byte nextShowWeekListState ){
 
         EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
         editMessageReplyMarkup.setChatId(chatId);
         editMessageReplyMarkup.setMessageId(messageId);
-        editMessageReplyMarkup.setReplyMarkup(telegramCalendar.createCalendar(yearNew, monthNew, nextShowWeekListState));
+        editMessageReplyMarkup.setReplyMarkup(telegramCalendar.createCalendar((short) yearNew, (byte) monthNew, nextShowWeekListState));
 
         try {
             execute(editMessageReplyMarkup);
         } catch (TelegramApiException e){
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
 
     }
