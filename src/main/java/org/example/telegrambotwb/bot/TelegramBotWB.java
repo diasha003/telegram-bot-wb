@@ -177,7 +177,6 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
     }
 
-
     private void sendBytesAsFile(Long chatId, byte[] bytes, String fileName){
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
