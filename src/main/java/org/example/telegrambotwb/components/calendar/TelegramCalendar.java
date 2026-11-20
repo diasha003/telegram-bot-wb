@@ -2,10 +2,14 @@ package org.example.telegrambotwb.components.calendar;
 
 import org.example.telegrambotwb.components.BotCommands;
 import org.example.telegrambotwb.dto.callback.CalendarCallbackDto;
+import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
@@ -23,8 +27,6 @@ public class TelegramCalendar implements BotCommands {
     }
 
     public InlineKeyboardMarkup createCalendar(short year, byte month, byte showWeekList) {
-
-
         List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
 
         //periods of weeks
@@ -57,8 +59,8 @@ public class TelegramCalendar implements BotCommands {
                 Instant instant = Instant.from(startDayOfWeek.atStartOfDay(ZoneId.of("GMT")));
                 calendar.setTime(Date.from(instant));
 
-                CalendarCallbackDto calendarDateCallbackDto = new CalendarCallbackDto(WEEK_PREFIX, startDayOfWeek, endDayOfWeek);
-                String result = jsonMapper.writeValueAsString(calendarDateCallbackDto);
+                CalendarWeekPeriodCallbackDto calendarWeekPeriodCallbackDto = new CalendarWeekPeriodCallbackDto(startDayOfWeek, endDayOfWeek);
+                String result = WEEK_PREFIX + "_" + calendarWeekPeriodCallbackDto.toBase64();
 
                 String buttonText = calendar.get(Calendar.WEEK_OF_YEAR) + " неделя (" + startDayOfWeek.format(formatter) + " - " + endDayOfWeek.format(formatter) + ")";
                 buttons.add(List.of(
@@ -101,6 +103,30 @@ public class TelegramCalendar implements BotCommands {
         markupInline.setKeyboard(buttons);
 
         return markupInline;
+
+    }
+
+    static byte[] serializeToBytes(final Object obj){
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+        try {
+
+            ObjectOutputStream out = new ObjectOutputStream(bos);
+            out.writeObject(obj);
+            out.flush();
+            return bos.toByteArray();
+
+        } catch (Exception e){
+            System.out.println(e.getMessage());
+            throw  new RuntimeException();
+        }
+
+    }
+
+    static String serializeToBase64(byte[] bytes){
+
+        return new String(Base64.getEncoder().encode(bytes));
 
     }
 

@@ -4,6 +4,7 @@ import org.example.telegrambotwb.components.BotCommands;
 import org.example.telegrambotwb.components.calendar.TelegramCalendar;
 import org.example.telegrambotwb.config.bot.BotConfig;
 import org.example.telegrambotwb.dto.callback.CalendarCallbackDto;
+import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.example.telegrambotwb.reports.ReportsService;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -89,7 +90,18 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     private void handleCallbackQuery(CallbackQuery callbackQuery){
 
         //System.out.println(callbackQuery.getData());
+        String callbackDataStr = callbackQuery.getData();
+        if (callbackDataStr.startsWith(WEEK_PREFIX)) {
+            String[] parts = callbackDataStr.split("_");
+            String payload = parts[parts.length - 1];
+            CalendarWeekPeriodCallbackDto dto = CalendarWeekPeriodCallbackDto.fromBase64(payload);
+            reportsService.getAllReports();
+            return;
+        }
+
         CalendarCallbackDto callbackData = jsonMapper.readValue(callbackQuery.getData(), CalendarCallbackDto.class);
+
+        CalendarWeekPeriodCallbackDto calendarWeekPeriodCallbackDto = jsonMapper.readValue(callbackQuery.getData(), CalendarWeekPeriodCallbackDto.class);
 
         Long chatId = callbackQuery.getMessage().getChatId();
         String messageText = callbackData.getReceivedMessage();
@@ -109,8 +121,6 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
                 editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
                 break;
-            case WEEK_PREFIX:
-                System.out.println(callbackData);
             case IGNORE_PREFIX:
                 reportsService.getAllReports();
                 return;

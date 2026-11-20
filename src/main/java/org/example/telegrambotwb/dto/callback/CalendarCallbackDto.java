@@ -26,32 +26,10 @@ public class CalendarCallbackDto {
     @JsonProperty("s")
     private byte showWeekList;
 
-    @JsonProperty("dF")
-    public LocalDate dateFrom;
-
-    @JsonProperty("dT")
-    public LocalDate dateTo;
 
     public CalendarCallbackDto(String message){
 
         this.receivedMessage = message;
-    }
-
-    public CalendarCallbackDto(String message, short year, byte month, byte showWeekList){
-
-        this.receivedMessage = message;
-        this.year = year;
-        this.month = month;
-        this.showWeekList = showWeekList;
-
-    }
-
-    public CalendarCallbackDto(String message, LocalDate dateFrom, LocalDate dateTo){
-
-        this.receivedMessage = message;
-        this.dateFrom = dateFrom;
-        this.dateTo = dateTo;
-
     }
 
 }
