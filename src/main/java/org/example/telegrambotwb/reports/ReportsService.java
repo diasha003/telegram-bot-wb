@@ -1,12 +1,17 @@
 package org.example.telegrambotwb.reports;
 
 import org.example.telegrambotwb.dto.api.ReportFileResponseDto;
+import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class ReportsService {
@@ -26,18 +31,46 @@ public class ReportsService {
         this.restClient = restClient;
     }
 
-    public void getAllReports(){
 
-        List<ReportFileResponseDto> result = restClient.get()
+    public ResponseEntity<byte[]> getWeeklyReport(CalendarWeekPeriodCallbackDto dto){
+
+        List<ReportFileResponseDto> allReport = getAllReports();
+
+        Optional<ReportFileResponseDto> resultWeekly = allReport.stream().
+                filter(item -> "Weekly".equals(item.getPeriod()))
+                .filter(item -> Objects.equals(item.getDateFrom(), dto.getDateFrom()))
+                .filter(item -> Objects.equals(item.getDateTo(), dto.getDateTo()))
+                .findFirst();
+
+
+        UUID idReport = resultWeekly
+                .map(ReportFileResponseDto::getId)
+                .orElseThrow(() -> new RuntimeException("Not found"));
+
+
+
+        return getFileReport(idReport);
+
+    }
+
+    public  List<ReportFileResponseDto> getAllReports(){
+
+        return restClient.get()
                 .uri(baseUrl + "/api/Report/all")
                 .header("X-Seller", xSeller)
                 .header("X-Api-Key", xApiKey)
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {});
 
-
-        System.out.println(result);
-
     }
 
+    public ResponseEntity<byte[]> getFileReport(UUID idReport){
+
+        return restClient.get()
+                        .uri(baseUrl + "/api/Report" + "?tempFileId=" + idReport)
+                        .header("X-Api-Key", xApiKey)
+                        .retrieve()
+                        .toEntity(byte[].class);
+
+    }
 }

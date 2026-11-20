@@ -6,17 +6,21 @@ import org.example.telegrambotwb.config.bot.BotConfig;
 import org.example.telegrambotwb.dto.callback.CalendarCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.example.telegrambotwb.reports.ReportsService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -89,26 +93,24 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
     private void handleCallbackQuery(CallbackQuery callbackQuery){
 
-        //System.out.println(callbackQuery.getData());
+        Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+
         String callbackDataStr = callbackQuery.getData();
         if (callbackDataStr.startsWith(WEEK_PREFIX)) {
             String[] parts = callbackDataStr.split("_");
             String payload = parts[parts.length - 1];
             CalendarWeekPeriodCallbackDto dto = CalendarWeekPeriodCallbackDto.fromBase64(payload);
-            reportsService.getAllReports();
+            ResponseEntity<byte[]> fileData = reportsService.getWeeklyReport(dto);
+            sendBytesAsFile(chatId, fileData.getBody(), fileData.getHeaders().getContentDisposition().getFilename());
             return;
         }
 
         CalendarCallbackDto callbackData = jsonMapper.readValue(callbackQuery.getData(), CalendarCallbackDto.class);
-
-        CalendarWeekPeriodCallbackDto calendarWeekPeriodCallbackDto = jsonMapper.readValue(callbackQuery.getData(), CalendarWeekPeriodCallbackDto.class);
-
-        Long chatId = callbackQuery.getMessage().getChatId();
         String messageText = callbackData.getReceivedMessage();
-        Integer messageId = callbackQuery.getMessage().getMessageId();
+
 
         YearMonth targetData;
-
         switch (messageText){
             case TOGGLE_WEEKS_PREFIX:
                 editCalendar(chatId, messageId, callbackData.getYear(), callbackData.getMonth(), (byte) (callbackData.getShowWeekList() == 1 ? 0: 1));
@@ -122,7 +124,6 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
                 editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
                 break;
             case IGNORE_PREFIX:
-                reportsService.getAllReports();
                 return;
             case CANCEL_PREFIX:
                 editCalendar(chatId, messageId, this.year , this.month, callbackData.getShowWeekList());
@@ -176,6 +177,25 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
     }
 
+
+    private void sendBytesAsFile(Long chatId, byte[] bytes, String fileName){
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+        InputFile inputFile = new InputFile(inputStream, fileName);
+
+        SendDocument sendDocument = SendDocument.builder()
+                .chatId(chatId)
+                .document(inputFile)
+                .build();
+
+        try {
+            execute(sendDocument);
+        } catch (TelegramApiException e){
+            System.out.println(e.getMessage());
+        }
+
+
+    }
 
 
     @Override
