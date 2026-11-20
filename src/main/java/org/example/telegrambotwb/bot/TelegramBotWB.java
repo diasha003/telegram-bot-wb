@@ -193,8 +193,6 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         } catch (TelegramApiException e){
             System.out.println(e.getMessage());
         }
-
-
     }
 
 
