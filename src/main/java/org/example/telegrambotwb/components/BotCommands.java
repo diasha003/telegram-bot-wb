@@ -18,6 +18,7 @@ public interface BotCommands {
   String NEXT_PREFIX = "next";
   String CANCEL_PREFIX = "cancel";
   String DAY_PREFIX = "day";
+  String WEEK_PREFIX = "week";
   String TOGGLE_WEEKS_PREFIX = "t_weeks";
 
 }

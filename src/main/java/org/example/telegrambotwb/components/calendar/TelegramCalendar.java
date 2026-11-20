@@ -1,7 +1,7 @@
 package org.example.telegrambotwb.components.calendar;
 
 import org.example.telegrambotwb.components.BotCommands;
-import org.example.telegrambotwb.dto.CalendarCallbackDto;
+import org.example.telegrambotwb.dto.callback.CalendarCallbackDto;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -44,30 +44,28 @@ public class TelegramCalendar implements BotCommands {
         LocalDate firstDayOfWeek = LocalDate.of(year, month, 1);
         LocalDate startDayOfWeekOfMonth = firstDayOfWeek.with(DayOfWeek.MONDAY);
 
-        List<Map<String,String>>  listOfWeeks = new ArrayList<>();
 
-        for (int i=0; i < countWeeksOfMonth ; i++){
+        Calendar calendar = Calendar.getInstance();
 
-            LocalDate startDayOfWeek = startDayOfWeekOfMonth.plusWeeks(i);
-            LocalDate endDayOfWeek = startDayOfWeek.plusDays(6);
 
-            Calendar calendar = Calendar.getInstance();
-            Instant instant = Instant.from(startDayOfWeek.atStartOfDay(ZoneId.of("GMT")));
-            calendar.setTime(Date.from(instant));
+        if ( showWeekList == 1 ) {
 
-            Map<String, String> week = new HashMap<>();
-            week.put(calendar.get(Calendar.WEEK_OF_YEAR) + " неделя (" + startDayOfWeek.format(formatter) + " - " + endDayOfWeek.format(formatter) + ")", startDayOfWeek.toString() + "_" + endDayOfWeek.toString());
-            listOfWeeks.add(week);
-        }
+            for (int i=0; i < countWeeksOfMonth ; i++){
+                LocalDate startDayOfWeek = startDayOfWeekOfMonth.plusWeeks(i);
+                LocalDate endDayOfWeek = startDayOfWeek.plusDays(6);
 
-        if (showWeekList == 1){
+                Instant instant = Instant.from(startDayOfWeek.atStartOfDay(ZoneId.of("GMT")));
+                calendar.setTime(Date.from(instant));
 
-            for(Map<String, String> week: listOfWeeks){
+                CalendarCallbackDto calendarDateCallbackDto = new CalendarCallbackDto(WEEK_PREFIX, startDayOfWeek, endDayOfWeek);
+                String result = jsonMapper.writeValueAsString(calendarDateCallbackDto);
 
-                String weekKey = week.keySet().toArray()[0].toString();
-                buttons.add(List.of(InlineKeyboardButton.builder().text(weekKey).callbackData(IGNORE_PREFIX).build()));
-
+                String buttonText = calendar.get(Calendar.WEEK_OF_YEAR) + " неделя (" + startDayOfWeek.format(formatter) + " - " + endDayOfWeek.format(formatter) + ")";
+                buttons.add(List.of(
+                        InlineKeyboardButton.builder().text(buttonText)
+                                .callbackData(result).build()));
             }
+
         }
 
 

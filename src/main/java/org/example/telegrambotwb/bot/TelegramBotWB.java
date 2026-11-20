@@ -3,7 +3,7 @@ package org.example.telegrambotwb.bot;
 import org.example.telegrambotwb.components.BotCommands;
 import org.example.telegrambotwb.components.calendar.TelegramCalendar;
 import org.example.telegrambotwb.config.bot.BotConfig;
-import org.example.telegrambotwb.dto.CalendarCallbackDto;
+import org.example.telegrambotwb.dto.callback.CalendarCallbackDto;
 import org.example.telegrambotwb.reports.ReportsService;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -109,6 +109,8 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
                 editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
                 break;
+            case WEEK_PREFIX:
+                System.out.println(callbackData);
             case IGNORE_PREFIX:
                 reportsService.getAllReports();
                 return;
