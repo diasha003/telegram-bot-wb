@@ -10,10 +10,10 @@ public interface BotCommands {
 
   List<BotCommand> LIST_OF_COMMAND = List.of(
           new BotCommand("/start", "start bot"),
-          new BotCommand("/weeklyReports", ""),
-          new BotCommand("/dailyReports", ""),
-          new BotCommand("/subcriptionWeekly", "subscription to receive weekly reports"),
-          new BotCommand("/subcriptionDaily", "subscription to receive daily reports")
+          new BotCommand("/weeklyreports", "weekly"),
+          new BotCommand("/dailyreports", "daily"),
+          new BotCommand("/subcriptionweekly", "subscription to receive weekly reports"),
+          new BotCommand("/subcriptiondaily", "subscription to receive daily reports")
   );
 
   String IGNORE_PREFIX = "ignore";

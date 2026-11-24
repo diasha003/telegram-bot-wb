@@ -202,7 +202,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
 
         sendMessage.setText(text);
-        sendMessage.setReplyMarkup(telegramCalendar.createWeeksCalendar(year, month, (byte) 0));
+        sendMessage.setReplyMarkup(telegramCalendar.createDaysCalendar(year, month, (byte) 0));
 
         try {
             execute(sendMessage);

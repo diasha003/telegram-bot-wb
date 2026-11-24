@@ -93,8 +93,10 @@ public class TelegramCalendar implements BotCommands {
 
                 String buttonText = calendar.get(Calendar.WEEK_OF_YEAR) + " неделя (" + startDayOfWeek.format(formatter) + " - " + endDayOfWeek.format(formatter) + ")";
                 buttons.add(List.of(
-                        InlineKeyboardButton.builder().text(buttonText)
-                                .callbackData(result).build()));
+                        InlineKeyboardButton.builder()
+                                .text(buttonText)
+                                .callbackData(result)
+                                .build()));
             }
 
         }
@@ -121,7 +123,59 @@ public class TelegramCalendar implements BotCommands {
         //list of days
 
 
+        YearMonth yearMonth = YearMonth.of(year,month);
+        int countDaysOfMonth = yearMonth.lengthOfMonth();
+        int offset = yearMonth.atDay(1).getDayOfWeek().getValue()-1;
 
+        int totalCells = offset + countDaysOfMonth;
+        int countWeeksOfMonth = (int) Math.ceil(totalCells/7.0);
+
+        int day = 1;
+
+        List<String> weekDayLabels = List.of("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс");
+        List<InlineKeyboardButton> headerRow = new ArrayList<>();
+        for (String label : weekDayLabels) {
+            headerRow.add(
+                    InlineKeyboardButton.builder()
+                            .text(label)
+                            .callbackData("IGNORE")
+                            .build()
+            );
+        }
+        buttons.add(headerRow);
+
+
+        for(int weekNumber=0; weekNumber <countWeeksOfMonth; weekNumber++ ){
+
+            List<InlineKeyboardButton> daysWeekButton = new ArrayList<>();
+
+            for(int dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++){
+
+                int dayOfMonth = weekNumber*7 + dayOfWeek;
+
+                if(day > countDaysOfMonth || dayOfMonth < offset){
+
+                    daysWeekButton.add(
+                            InlineKeyboardButton.builder()
+                                    .text(String.valueOf("  ")).
+                                    callbackData(IGNORE_PREFIX)
+                                    .build());
+
+                } else {
+
+                    daysWeekButton.add(InlineKeyboardButton.builder().
+                            text(String.valueOf(day))
+                            .callbackData(DAY_PREFIX)
+                            .build());
+                    day++;
+
+                }
+
+            }
+
+            buttons.add(daysWeekButton);
+
+        }
 
         buttons.add(createNavigationMenuCalendar(year, month, showWeekList));
         buttons.add(List.of(createFooterCalendar(year, month, showWeekList)));
