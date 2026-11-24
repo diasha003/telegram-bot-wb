@@ -85,6 +85,9 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
             case "/start":
                 startCommand(chatId);
                 break;
+            case "/weeklyReports":
+                weeklyReportCommand(chatId);
+                break;
             default:
                 System.out.println("unexpected message");
         }
@@ -135,15 +138,38 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     }
 
 
-
     private void startCommand(long chatId){
 
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
 
         String text = """
-                Добро пожаловать!
-                
+                        Добро пожаловать!
+                        
+                        Выберите необходимую команду:
+                        
+                        /weeklyReports — Еженедельные отчеты
+                        /dailyReports — Ежедневные отчеты
+                        /subscriptionWeekly — Подписка на еженедельные отчеты
+                        /subscriptionDaily — Подписка на ежедневные отчеты""";
+
+        sendMessage.setText(text);
+
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException exception){
+            System.out.println(exception.getMessage());
+        }
+
+    }
+
+
+    private void weeklyReportCommand(long chatId){
+
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+
+        String text = """
                 Выберите неделю для построения отчета
                 
                 """;
