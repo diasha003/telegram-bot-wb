@@ -17,11 +17,15 @@ public interface BotCommands {
   );
 
   String IGNORE_PREFIX = "ignore";
-  String PREV_PREFIX = "prev";
-  String NEXT_PREFIX = "next";
-  String CANCEL_PREFIX = "cancel";
+  String PREV_PREFIX_WEEKS = "prev_w";
+  String PREV_PREFIX_DAYS = "prev_d";
+  String NEXT_PREFIX_WEEKS = "next_w";
+  String NEXT_PREFIX_DAYS = "next_d";
+  String CANCEL_PREFIX_WEEKS = "cancel_w";
+  String CANCEL_PREFIX_DAYS = "cancel_d";
   String DAY_PREFIX = "day";
   String WEEK_PREFIX = "week";
   String TOGGLE_WEEKS_PREFIX = "t_weeks";
+  String TOGGLE_DAYS_PREFIX = "t_days";
 
 }

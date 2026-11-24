@@ -85,10 +85,10 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
             case "/start":
                 startCommand(chatId);
                 break;
-            case "/weeklyReports":
+            case "/weeklyreports":
                 weeklyReportCommand(chatId);
                 break;
-            case "/dailyReports":
+            case "/dailyreports":
                 dailyReportCommand(chatId);
                 break;
             default:
@@ -119,20 +119,34 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         YearMonth targetData;
         switch (messageText){
             case TOGGLE_WEEKS_PREFIX:
-                editCalendar(chatId, messageId, callbackData.getYear(), callbackData.getMonth(), (byte) (callbackData.getShowWeekList() == 1 ? 0: 1));
+                editWeeksCalendar(chatId, messageId, callbackData.getYear(), callbackData.getMonth(), (byte) (callbackData.getShowWeekList() == 1 ? 0: 1));
                 break;
-            case PREV_PREFIX:
+            case TOGGLE_DAYS_PREFIX:
+                editDaysCalendar(chatId, messageId, callbackData.getYear(), callbackData.getMonth(), (byte) (callbackData.getShowWeekList() == 1 ? 0: 1));
+                break;
+            case PREV_PREFIX_WEEKS:
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).minusMonths(1);
-                editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
+                editWeeksCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
                 break;
-            case NEXT_PREFIX:
+            case PREV_PREFIX_DAYS:
+                targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).minusMonths(1);
+                editDaysCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
+                break;
+            case NEXT_PREFIX_WEEKS:
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
-                editCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
+                editWeeksCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
+                break;
+            case NEXT_PREFIX_DAYS:
+                targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
+                editDaysCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
                 break;
             case IGNORE_PREFIX:
                 return;
-            case CANCEL_PREFIX:
-                editCalendar(chatId, messageId, this.year , this.month, callbackData.getShowWeekList());
+            case CANCEL_PREFIX_WEEKS:
+                editWeeksCalendar(chatId, messageId, this.year , this.month, callbackData.getShowWeekList());
+                break;
+            case CANCEL_PREFIX_DAYS:
+                editDaysCalendar(chatId, messageId, this.year , this.month, callbackData.getShowWeekList());
                 break;
             default:
                 System.out.println("unexpected message");
@@ -151,10 +165,10 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
                         
                         Выберите необходимую команду:
                         
-                        /weeklyReports — Еженедельные отчеты
-                        /dailyReports — Ежедневные отчеты
-                        /subscriptionWeekly — Подписка на еженедельные отчеты
-                        /subscriptionDaily — Подписка на ежедневные отчеты""";
+                        /weeklyreports — Еженедельные отчеты
+                        /dailyreports — Ежедневные отчеты
+                        /subscriptionweekly — Подписка на еженедельные отчеты
+                        /subscriptiondaily — Подписка на ежедневные отчеты""";
 
         sendMessage.setText(text);
 
@@ -213,12 +227,27 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     }
 
 
-    private void editCalendar(Long chatId, Integer messageId, int yearNew, int monthNew, byte nextShowWeekListState ){
+    private void editWeeksCalendar(Long chatId, Integer messageId, int yearNew, int monthNew, byte nextShowWeekListState ){
 
         EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
         editMessageReplyMarkup.setChatId(chatId);
         editMessageReplyMarkup.setMessageId(messageId);
         editMessageReplyMarkup.setReplyMarkup(telegramCalendar.createWeeksCalendar((short) yearNew, (byte) monthNew, nextShowWeekListState));
+
+        try {
+            execute(editMessageReplyMarkup);
+        } catch (TelegramApiException e){
+            System.out.println(e.getMessage());
+        }
+
+    }
+
+    private void editDaysCalendar(Long chatId, Integer messageId, int yearNew, int monthNew, byte nextShowWeekListState ){
+
+        EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+        editMessageReplyMarkup.setChatId(chatId);
+        editMessageReplyMarkup.setMessageId(messageId);
+        editMessageReplyMarkup.setReplyMarkup(telegramCalendar.createDaysCalendar((short) yearNew, (byte) monthNew, nextShowWeekListState));
 
         try {
             execute(editMessageReplyMarkup);
