@@ -88,6 +88,9 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
             case "/weeklyReports":
                 weeklyReportCommand(chatId);
                 break;
+            case "/dailyReports":
+                dailyReportCommand(chatId);
+                break;
             default:
                 System.out.println("unexpected message");
         }
@@ -176,11 +179,33 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
 
         sendMessage.setText(text);
-        sendMessage.setReplyMarkup(telegramCalendar.createCalendar(year, month, (byte) 0));
+        sendMessage.setReplyMarkup(telegramCalendar.createWeeksCalendar(year, month, (byte) 0));
 
         try {
             execute(sendMessage);
             System.out.println("Reply sent");
+        } catch (TelegramApiException exception){
+            System.out.println(exception.getMessage());
+        }
+
+    }
+
+    private void dailyReportCommand(long chatId){
+
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+
+        String text = """
+                Выберите день для построения отчета
+                
+                """;
+
+
+        sendMessage.setText(text);
+        sendMessage.setReplyMarkup(telegramCalendar.createWeeksCalendar(year, month, (byte) 0));
+
+        try {
+            execute(sendMessage);
         } catch (TelegramApiException exception){
             System.out.println(exception.getMessage());
         }
@@ -193,7 +218,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
         editMessageReplyMarkup.setChatId(chatId);
         editMessageReplyMarkup.setMessageId(messageId);
-        editMessageReplyMarkup.setReplyMarkup(telegramCalendar.createCalendar((short) yearNew, (byte) monthNew, nextShowWeekListState));
+        editMessageReplyMarkup.setReplyMarkup(telegramCalendar.createWeeksCalendar((short) yearNew, (byte) monthNew, nextShowWeekListState));
 
         try {
             execute(editMessageReplyMarkup);

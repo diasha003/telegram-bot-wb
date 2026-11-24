@@ -23,32 +23,61 @@ public class TelegramCalendar implements BotCommands {
 
     public TelegramCalendar(JsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
+    }
+
+    private List<InlineKeyboardButton> createNavigationMenuCalendar(short year, byte month, byte showWeekList){
+
+
+        CalendarCallbackDto calendarCallbackPrevDto = new CalendarCallbackDto(PREV_PREFIX, year, month,showWeekList);
+        String resultPrev = jsonMapper.writeValueAsString(calendarCallbackPrevDto);
+
+        CalendarCallbackDto calendarCallbackNextDto = new CalendarCallbackDto(NEXT_PREFIX, year, month,showWeekList);
+        String resultNext = jsonMapper.writeValueAsString(calendarCallbackNextDto);
+
+        CalendarCallbackDto calendarCallbackIgnoreDto = new CalendarCallbackDto(IGNORE_PREFIX);
+        String resultIgnore = jsonMapper.writeValueAsString(calendarCallbackIgnoreDto);
+
+
+        return List.of(
+                InlineKeyboardButton.builder().text("⬅️").callbackData(resultPrev).build(),
+                InlineKeyboardButton.builder().text(YearMonth.of(year,month).getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + YearMonth.of(year,month).getYear()).callbackData(resultIgnore).build(),
+                InlineKeyboardButton.builder().text("➡️").callbackData(resultNext).build()
+        );
 
     }
 
-    public InlineKeyboardMarkup createCalendar(short year, byte month, byte showWeekList) {
+    private InlineKeyboardButton createFooterCalendar(short year, byte month, byte showWeekList){
+
+        CalendarCallbackDto calendarCallbackCancelDto = new CalendarCallbackDto(CANCEL_PREFIX, year, month,showWeekList);
+        String resultCancel = jsonMapper.writeValueAsString(calendarCallbackCancelDto);
+
+        return InlineKeyboardButton.builder().text("❌").callbackData(resultCancel).build();
+
+    }
+
+    private InlineKeyboardButton createHeaderCalendar(String resultPeriod, String dropDownText){
+
+        return InlineKeyboardButton.builder().text(dropDownText).callbackData(resultPeriod).build();
+
+    }
+
+    public InlineKeyboardMarkup createWeeksCalendar(short year, byte month, byte showWeekList) {
+
         List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
 
-        //periods of weeks
         CalendarCallbackDto calendarCallbackPeriodDto = new CalendarCallbackDto(TOGGLE_WEEKS_PREFIX, year, month, showWeekList);
         String resultPeriod = jsonMapper.writeValueAsString(calendarCallbackPeriodDto);
-
         String dropDownText = showWeekList == 1 ? "\uD83D\uDD3D Выберите неделю ниже:" : "Выбрать неделю:";
-        InlineKeyboardButton periodsButton = InlineKeyboardButton.builder().text(dropDownText).callbackData(resultPeriod).build();
-        buttons.add(List.of(periodsButton));
+        buttons.add(List.of(createHeaderCalendar(resultPeriod, dropDownText)));
 
         //list of weeks
         int countDaysOfMonth = YearMonth.of(year,month).lengthOfMonth();
         double countWeeksOfMonth = (int) Math.ceil(countDaysOfMonth/7.0);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-
         LocalDate firstDayOfWeek = LocalDate.of(year, month, 1);
         LocalDate startDayOfWeekOfMonth = firstDayOfWeek.with(DayOfWeek.MONDAY);
-
-
         Calendar calendar = Calendar.getInstance();
-
 
         if ( showWeekList == 1 ) {
 
@@ -70,34 +99,8 @@ public class TelegramCalendar implements BotCommands {
 
         }
 
-
-        //header calendar
-        CalendarCallbackDto calendarCallbackPrevDto = new CalendarCallbackDto(PREV_PREFIX, year, month,showWeekList);
-        String resultPrev = jsonMapper.writeValueAsString(calendarCallbackPrevDto);
-
-        CalendarCallbackDto calendarCallbackNextDto = new CalendarCallbackDto(NEXT_PREFIX, year, month,showWeekList);
-        String resultNext = jsonMapper.writeValueAsString(calendarCallbackNextDto);
-
-        CalendarCallbackDto calendarCallbackIgnoreDto = new CalendarCallbackDto(IGNORE_PREFIX);
-        String resultIgnore = jsonMapper.writeValueAsString(calendarCallbackIgnoreDto);
-
-
-        List<InlineKeyboardButton> headerRow = List.of(
-                InlineKeyboardButton.builder().text("⬅️").callbackData(resultPrev).build(),
-                InlineKeyboardButton.builder().text(YearMonth.of(year,month).getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + YearMonth.of(year,month).getYear()).callbackData(resultIgnore).build(),
-                InlineKeyboardButton.builder().text("➡️").callbackData(resultNext).build()
-        );
-
-        buttons.add(headerRow);
-
-
-        //footer calendar
-        CalendarCallbackDto calendarCallbackCancelDto = new CalendarCallbackDto(CANCEL_PREFIX, year, month,showWeekList);
-        String resultCancel = jsonMapper.writeValueAsString(calendarCallbackCancelDto);
-
-        InlineKeyboardButton footerRow = InlineKeyboardButton.builder().text("❌").callbackData(resultCancel).build();
-        buttons.add(List.of(footerRow));
-
+        buttons.add(createNavigationMenuCalendar(year, month, showWeekList));
+        buttons.add(List.of(createFooterCalendar(year, month, showWeekList)));
 
         InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
         markupInline.setKeyboard(buttons);
@@ -106,29 +109,29 @@ public class TelegramCalendar implements BotCommands {
 
     }
 
-    static byte[] serializeToBytes(final Object obj){
+    public InlineKeyboardMarkup createDaysCalendar(short year, byte month, byte showWeekList){
 
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
 
-        try {
+        CalendarCallbackDto calendarCallbackPeriodDto = new CalendarCallbackDto(TOGGLE_WEEKS_PREFIX, year, month, showWeekList);
+        String resultPeriod = jsonMapper.writeValueAsString(calendarCallbackPeriodDto);
+        String dropDownText = showWeekList == 1 ? "\uD83D\uDD3D Выберите день ниже:" : "Выбрать день:";
+        buttons.add(List.of(createHeaderCalendar(resultPeriod, dropDownText)));
 
-            ObjectOutputStream out = new ObjectOutputStream(bos);
-            out.writeObject(obj);
-            out.flush();
-            return bos.toByteArray();
+        //list of days
 
-        } catch (Exception e){
-            System.out.println(e.getMessage());
-            throw  new RuntimeException();
-        }
+
+
+
+        buttons.add(createNavigationMenuCalendar(year, month, showWeekList));
+        buttons.add(List.of(createFooterCalendar(year, month, showWeekList)));
+
+        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+        markupInline.setKeyboard(buttons);
+
+        return markupInline;
+
 
     }
-
-    static String serializeToBase64(byte[] bytes){
-
-        return new String(Base64.getEncoder().encode(bytes));
-
-    }
-
 
 }
