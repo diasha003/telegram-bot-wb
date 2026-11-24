@@ -1,15 +1,14 @@
 package org.example.telegrambotwb.components.calendar;
 
 import org.example.telegrambotwb.components.BotCommands;
-import org.example.telegrambotwb.dto.callback.CalendarCallbackDto;
+import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
+import org.example.telegrambotwb.dto.callback.WeeksCalendarCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
@@ -28,13 +27,13 @@ public class TelegramCalendar implements BotCommands {
     private List<InlineKeyboardButton> createNavigationMenuCalendar(short year, byte month, byte showWeekList, String types){
 
 
-        CalendarCallbackDto calendarCallbackPrevDto = new CalendarCallbackDto("weeks".equals(types) ? PREV_PREFIX_WEEKS : PREV_PREFIX_DAYS, year, month,showWeekList);
+        WeeksCalendarCallbackDto calendarCallbackPrevDto = new WeeksCalendarCallbackDto("weeks".equals(types) ? PREV_PREFIX_WEEKS : PREV_PREFIX_DAYS, year, month,showWeekList);
         String resultPrev = jsonMapper.writeValueAsString(calendarCallbackPrevDto);
 
-        CalendarCallbackDto calendarCallbackNextDto = new CalendarCallbackDto("weeks".equals(types) ? NEXT_PREFIX_WEEKS : NEXT_PREFIX_DAYS, year, month,showWeekList);
+        WeeksCalendarCallbackDto calendarCallbackNextDto = new WeeksCalendarCallbackDto("weeks".equals(types) ? NEXT_PREFIX_WEEKS : NEXT_PREFIX_DAYS, year, month,showWeekList);
         String resultNext = jsonMapper.writeValueAsString(calendarCallbackNextDto);
 
-        CalendarCallbackDto calendarCallbackIgnoreDto = new CalendarCallbackDto(IGNORE_PREFIX);
+        WeeksCalendarCallbackDto calendarCallbackIgnoreDto = new WeeksCalendarCallbackDto(IGNORE_PREFIX);
         String resultIgnore = jsonMapper.writeValueAsString(calendarCallbackIgnoreDto);
 
 
@@ -48,7 +47,7 @@ public class TelegramCalendar implements BotCommands {
 
     private InlineKeyboardButton createFooterCalendar(short year, byte month, byte showWeekList, String types){
 
-        CalendarCallbackDto calendarCallbackCancelDto = new CalendarCallbackDto("weeks".equals(types) ? CANCEL_PREFIX_WEEKS : CANCEL_PREFIX_DAYS, year, month,showWeekList);
+        WeeksCalendarCallbackDto calendarCallbackCancelDto = new WeeksCalendarCallbackDto("weeks".equals(types) ? CANCEL_PREFIX_WEEKS : CANCEL_PREFIX_DAYS, year, month,showWeekList);
         String resultCancel = jsonMapper.writeValueAsString(calendarCallbackCancelDto);
 
         return InlineKeyboardButton.builder().text("❌").callbackData(resultCancel).build();
@@ -65,7 +64,7 @@ public class TelegramCalendar implements BotCommands {
 
         List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
 
-        CalendarCallbackDto calendarCallbackPeriodDto = new CalendarCallbackDto(TOGGLE_WEEKS_PREFIX, year, month, showWeekList);
+        WeeksCalendarCallbackDto calendarCallbackPeriodDto = new WeeksCalendarCallbackDto(TOGGLE_WEEKS_PREFIX, year, month, showWeekList);
         String resultPeriod = jsonMapper.writeValueAsString(calendarCallbackPeriodDto);
         String dropDownText = showWeekList == 1 ? "\uD83D\uDD3D Выберите неделю ниже:" : "Выбрать неделю:";
         buttons.add(List.of(createHeaderCalendar(resultPeriod, dropDownText)));
@@ -115,7 +114,7 @@ public class TelegramCalendar implements BotCommands {
 
         List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
 
-        CalendarCallbackDto calendarCallbackPeriodDto = new CalendarCallbackDto(TOGGLE_DAYS_PREFIX, year, month, showWeekList);
+        WeeksCalendarCallbackDto calendarCallbackPeriodDto = new WeeksCalendarCallbackDto(TOGGLE_DAYS_PREFIX, year, month, showWeekList);
         String resultPeriod = jsonMapper.writeValueAsString(calendarCallbackPeriodDto);
         String dropDownText = showWeekList == 1 ? "\uD83D\uDD3D Выберите день ниже:" : "Выбрать день:";
         buttons.add(List.of(createHeaderCalendar(resultPeriod, dropDownText)));
@@ -164,9 +163,12 @@ public class TelegramCalendar implements BotCommands {
 
                     } else {
 
+                        CalendarDataCallbackDto calendarDataCallbackDtoCallbackDto = new CalendarDataCallbackDto(LocalDate.of(year, month, day));
+                        String result = DAY_PREFIX + "_" + calendarDataCallbackDtoCallbackDto.toBase64();
+
                         daysWeekButton.add(InlineKeyboardButton.builder().
                                 text(String.valueOf(day))
-                                .callbackData(DAY_PREFIX)
+                                .callbackData(result)
                                 .build());
                         day++;
 

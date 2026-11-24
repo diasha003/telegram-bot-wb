@@ -6,13 +6,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class CalendarCallbackDto {
+public class WeeksCalendarCallbackDto {
 
     @JsonProperty("p")
     private String receivedMessage;
@@ -27,7 +25,7 @@ public class CalendarCallbackDto {
     private byte showWeekList;
 
 
-    public CalendarCallbackDto(String message){
+    public WeeksCalendarCallbackDto(String message){
 
         this.receivedMessage = message;
     }

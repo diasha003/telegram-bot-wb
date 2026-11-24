@@ -3,7 +3,8 @@ package org.example.telegrambotwb.bot;
 import org.example.telegrambotwb.components.BotCommands;
 import org.example.telegrambotwb.components.calendar.TelegramCalendar;
 import org.example.telegrambotwb.config.bot.BotConfig;
-import org.example.telegrambotwb.dto.callback.CalendarCallbackDto;
+import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
+import org.example.telegrambotwb.dto.callback.WeeksCalendarCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.example.telegrambotwb.reports.ReportsService;
 import org.springframework.http.ResponseEntity;
@@ -103,16 +104,22 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         Integer messageId = callbackQuery.getMessage().getMessageId();
 
         String callbackDataStr = callbackQuery.getData();
+        String[] parts = callbackDataStr.split("_");
+        String payload = parts[parts.length - 1];
         if (callbackDataStr.startsWith(WEEK_PREFIX)) {
-            String[] parts = callbackDataStr.split("_");
-            String payload = parts[parts.length - 1];
             CalendarWeekPeriodCallbackDto dto = CalendarWeekPeriodCallbackDto.fromBase64(payload);
             ResponseEntity<byte[]> fileData = reportsService.getWeeklyReport(dto);
             sendBytesAsFile(chatId, fileData.getBody(), fileData.getHeaders().getContentDisposition().getFilename());
             return;
+        } else if(callbackDataStr.startsWith(DAY_PREFIX)){
+
+            CalendarDataCallbackDto dto = CalendarDataCallbackDto.fromBase64(payload);
+            ResponseEntity<byte[]> fileData = reportsService.getDailyReport(dto);
+            sendBytesAsFile(chatId, fileData.getBody(), fileData.getHeaders().getContentDisposition().getFilename());
+            return;
         }
 
-        CalendarCallbackDto callbackData = jsonMapper.readValue(callbackQuery.getData(), CalendarCallbackDto.class);
+        WeeksCalendarCallbackDto callbackData = jsonMapper.readValue(callbackQuery.getData(), WeeksCalendarCallbackDto.class);
         String messageText = callbackData.getReceivedMessage();
 
 

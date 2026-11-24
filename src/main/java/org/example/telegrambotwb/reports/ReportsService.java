@@ -1,6 +1,7 @@
 package org.example.telegrambotwb.reports;
 
 import org.example.telegrambotwb.dto.api.ReportFileResponseDto;
+import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -31,6 +32,24 @@ public class ReportsService {
         this.restClient = restClient;
     }
 
+
+    public ResponseEntity<byte[]> getDailyReport(CalendarDataCallbackDto dto){
+
+        List<ReportFileResponseDto> allReport = getAllReports();
+
+        Optional<ReportFileResponseDto> resultDaily = allReport.stream().
+                filter(item -> "Daily".equals(item.getPeriod()))
+                .filter(item -> Objects.equals(item.getDateFrom(), dto.getDate()))
+                .filter(item -> Objects.equals(item.getDateTo(), dto.getDate()))
+                .findFirst();
+
+        UUID idReport = resultDaily
+                .map(ReportFileResponseDto::getId)
+                .orElseThrow(() -> new RuntimeException("Not found"));
+
+        return getFileReport(idReport);
+
+    }
 
     public ResponseEntity<byte[]> getWeeklyReport(CalendarWeekPeriodCallbackDto dto){
 
