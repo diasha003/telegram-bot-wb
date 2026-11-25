@@ -6,7 +6,8 @@ import org.example.telegrambotwb.config.bot.BotConfig;
 import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
 import org.example.telegrambotwb.dto.callback.WeeksCalendarCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
-import org.example.telegrambotwb.reports.ReportsService;
+import org.example.telegrambotwb.service.report.ReportsService;
+import org.example.telegrambotwb.service.subscription.SubscriptionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -19,12 +20,16 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands {
@@ -33,13 +38,15 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     private final TelegramCalendar telegramCalendar;
     private final JsonMapper jsonMapper;
     private final ReportsService reportsService;
+    private final SubscriptionService subscriptionService;
 
     private short year;
     private byte month;
 
 
-    public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper, ReportsService reportsService) {
+    public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper, ReportsService reportsService, SubscriptionService subscriptionService) {
         this.reportsService = reportsService;
+        this.subscriptionService = subscriptionService;
 
         LocalDate now = LocalDate.now();
         year = (short) now.getYear();
@@ -92,6 +99,9 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
                 break;
             case "/dailyreports":
                 dailyReportCommand(chatId);
+                break;
+            case "/subcriptionweekly":
+                subscriptionWeeklyReport(chatId);
                 break;
             default:
                 System.out.println("unexpected message");
@@ -210,7 +220,6 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
     }
 
-
     private void weeklyReportCommand(long chatId){
 
         SendMessage sendMessage = new SendMessage();
@@ -255,7 +264,6 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         }
 
     }
-
 
     private void editWeeksCalendar(Long chatId, Integer messageId, int yearNew, int monthNew, byte nextShowWeekListState ){
 
@@ -304,7 +312,6 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         }
     }
 
-
     private void  sendText (long chatId, String text){
 
         SendMessage sendMessage = new SendMessage();
@@ -319,11 +326,38 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
     }
 
+    private void subscriptionWeeklyReport(Long chatId){
+
+        if (subscriptionService.hasSubscriptions(chatId)){
+
+        } else{
+
+            SendMessage sendMessage = new SendMessage();
+            sendMessage.setChatId(chatId);
+            sendMessage.setText("У вас нет подписок. Нажмите «Добавить селлера».");
+
+            List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
+            InlineKeyboardButton button = InlineKeyboardButton.builder().text("Добавить селлера").callbackData(IGNORE_PREFIX).build();
+            buttons.add(List.of(button));
+            InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+            markupInline.setKeyboard(buttons);
+            sendMessage.setReplyMarkup(markupInline);
+
+            try {
+                execute(sendMessage);
+            } catch (TelegramApiException exception){
+                System.out.println(exception.getMessage());
+            }
+
+        }
+
+
+    }
+
     @Override
     public String getBotUsername() {
         return botConfig.getBotName();
     }
-
 
     @Override
     public String getBotToken() {
