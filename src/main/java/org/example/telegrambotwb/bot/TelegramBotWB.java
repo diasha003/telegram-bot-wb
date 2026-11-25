@@ -7,6 +7,7 @@ import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
 import org.example.telegrambotwb.dto.callback.WeeksCalendarCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.example.telegrambotwb.reports.ReportsService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -109,12 +110,34 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         if (callbackDataStr.startsWith(WEEK_PREFIX)) {
             CalendarWeekPeriodCallbackDto dto = CalendarWeekPeriodCallbackDto.fromBase64(payload);
             ResponseEntity<byte[]> fileData = reportsService.getWeeklyReport(dto);
+
+            if (fileData.getStatusCode() == HttpStatus.NOT_FOUND){
+
+                String message = "Отчёт за период %s — %s не найден"
+                        .formatted(dto.getDateFrom(), dto.getDateTo());
+
+                sendText(chatId, message);
+                return;
+
+            }
+
             sendBytesAsFile(chatId, fileData.getBody(), fileData.getHeaders().getContentDisposition().getFilename());
             return;
         } else if(callbackDataStr.startsWith(DAY_PREFIX)){
 
             CalendarDataCallbackDto dto = CalendarDataCallbackDto.fromBase64(payload);
             ResponseEntity<byte[]> fileData = reportsService.getDailyReport(dto);
+
+            if (fileData.getStatusCode() == HttpStatus.NOT_FOUND){
+
+                String message = "Отчёт за период %s не найден"
+                        .formatted(dto.getDate());
+
+                sendText(chatId, message);
+                return;
+
+            }
+
             sendBytesAsFile(chatId, fileData.getBody(), fileData.getHeaders().getContentDisposition().getFilename());
             return;
         }
@@ -281,6 +304,20 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         }
     }
 
+
+    private void  sendText (long chatId, String text){
+
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        sendMessage.setText(text);
+
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException exception){
+            System.out.println(exception.getMessage());
+        }
+
+    }
 
     @Override
     public String getBotUsername() {

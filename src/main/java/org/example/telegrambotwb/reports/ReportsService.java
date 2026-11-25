@@ -5,6 +5,7 @@ import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -35,6 +36,10 @@ public class ReportsService {
 
     public ResponseEntity<byte[]> getDailyReport(CalendarDataCallbackDto dto){
 
+        if (dto == null){
+            return ResponseEntity.badRequest().build();
+        }
+
         List<ReportFileResponseDto> allReport = getAllReports();
 
         Optional<ReportFileResponseDto> resultDaily = allReport.stream().
@@ -43,15 +48,21 @@ public class ReportsService {
                 .filter(item -> Objects.equals(item.getDateTo(), dto.getDate()))
                 .findFirst();
 
-        UUID idReport = resultDaily
-                .map(ReportFileResponseDto::getId)
-                .orElseThrow(() -> new RuntimeException("Not found"));
+        if (resultDaily.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+
+        UUID idReport = resultDaily.get().getId();
 
         return getFileReport(idReport);
 
     }
 
     public ResponseEntity<byte[]> getWeeklyReport(CalendarWeekPeriodCallbackDto dto){
+
+        if (dto == null){
+            return ResponseEntity.badRequest().build();
+        }
 
         List<ReportFileResponseDto> allReport = getAllReports();
 
@@ -62,11 +73,11 @@ public class ReportsService {
                 .findFirst();
 
 
-        UUID idReport = resultWeekly
-                .map(ReportFileResponseDto::getId)
-                .orElseThrow(() -> new RuntimeException("Not found"));
+        if (resultWeekly.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
 
-
+        UUID idReport = resultWeekly.get().getId();
 
         return getFileReport(idReport);
 
