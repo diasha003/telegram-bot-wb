@@ -7,6 +7,7 @@ import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.*;
@@ -14,18 +15,12 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
 
+import static org.example.telegrambotwb.components.BotCommands.*;
+
 @Component
-public class TelegramCalendar implements BotCommands {
-
-    private final JsonMapper jsonMapper;
-
-
-    public TelegramCalendar(JsonMapper jsonMapper) {
-        this.jsonMapper = jsonMapper;
-    }
-
-    private List<InlineKeyboardButton> createNavigationMenuCalendar(short year, byte month, byte showWeekList, String types){
-
+public class TelegramCalendar {
+    private static List<InlineKeyboardButton> createNavigationMenuCalendar(short year, byte month, byte showWeekList, String types){
+        JsonMapper jsonMapper = new JsonMapper();
 
         WeeksCalendarCallbackDto calendarCallbackPrevDto = new WeeksCalendarCallbackDto("weeks".equals(types) ? PREV_PREFIX_WEEKS : PREV_PREFIX_DAYS, year, month,showWeekList);
         String resultPrev = jsonMapper.writeValueAsString(calendarCallbackPrevDto);
@@ -45,7 +40,8 @@ public class TelegramCalendar implements BotCommands {
 
     }
 
-    private InlineKeyboardButton createFooterCalendar(short year, byte month, byte showWeekList, String types){
+    private static InlineKeyboardButton createFooterCalendar(short year, byte month, byte showWeekList, String types){
+        JsonMapper jsonMapper = new JsonMapper();
 
         WeeksCalendarCallbackDto calendarCallbackCancelDto = new WeeksCalendarCallbackDto("weeks".equals(types) ? CANCEL_PREFIX_WEEKS : CANCEL_PREFIX_DAYS, year, month,showWeekList);
         String resultCancel = jsonMapper.writeValueAsString(calendarCallbackCancelDto);
@@ -54,13 +50,14 @@ public class TelegramCalendar implements BotCommands {
 
     }
 
-    private InlineKeyboardButton createHeaderCalendar(String resultPeriod, String dropDownText){
+    private static InlineKeyboardButton createHeaderCalendar(String resultPeriod, String dropDownText){
 
         return InlineKeyboardButton.builder().text(dropDownText).callbackData(resultPeriod).build();
 
     }
 
-    public InlineKeyboardMarkup createWeeksCalendar(short year, byte month, byte showWeekList) {
+    public static InlineKeyboardMarkup createWeeksCalendar(short year, byte month, byte showWeekList) {
+        JsonMapper jsonMapper = new JsonMapper();
 
         List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
 
@@ -110,7 +107,8 @@ public class TelegramCalendar implements BotCommands {
 
     }
 
-    public InlineKeyboardMarkup createDaysCalendar(short year, byte month, byte showWeekList){
+    public static InlineKeyboardMarkup createDaysCalendar(short year, byte month, byte showWeekList){
+        JsonMapper jsonMapper = new JsonMapper();
 
         List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
 

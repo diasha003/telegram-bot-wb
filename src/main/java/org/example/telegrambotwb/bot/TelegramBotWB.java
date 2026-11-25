@@ -6,6 +6,8 @@ import org.example.telegrambotwb.config.bot.BotConfig;
 import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
 import org.example.telegrambotwb.dto.callback.WeeksCalendarCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
+import org.example.telegrambotwb.handlers.BaseCallbackHandler;
+import org.example.telegrambotwb.handlers.base.CallbackMethodAnnotation;
 import org.example.telegrambotwb.service.report.ReportsService;
 import org.example.telegrambotwb.service.subscription.SubscriptionService;
 import org.springframework.http.HttpStatus;
@@ -25,11 +27,14 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands {
@@ -40,9 +45,10 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     private final ReportsService reportsService;
     private final SubscriptionService subscriptionService;
 
+    private static Map<String, BaseCallbackHandler> handlers = scanForHandlers();
+
     private short year;
     private byte month;
-
 
     public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper, ReportsService reportsService, SubscriptionService subscriptionService) {
         this.reportsService = reportsService;
@@ -62,6 +68,42 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
             System.out.println(exception.getMessage());
         }
 
+    }
+
+    private static Map<String, BaseCallbackHandler> scanForHandlers() {
+        Package handlersPackage = BaseCallbackHandler.class.getPackage();
+        InputStream stream = ClassLoader.getSystemClassLoader()
+                .getResourceAsStream(handlersPackage.getName().replaceAll("[.]", "/"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+
+        Set<Class> handlersMetadata = reader.lines()
+                .filter(line -> line.endsWith(".class"))
+                .map(line -> {
+                    try {
+                        return Class.forName(handlersPackage.getName() + "." + line.substring(0, line.lastIndexOf('.')));
+                    } catch (ClassNotFoundException e) {
+                        return null;
+                    }
+                })
+                .filter(cls -> cls != null && BaseCallbackHandler.class.isAssignableFrom(cls))
+                .collect(Collectors.toSet());
+
+        Map<String, BaseCallbackHandler> result = new HashMap<>();
+        handlersMetadata.forEach(metadata -> {
+            CallbackMethodAnnotation annotation = (CallbackMethodAnnotation)metadata.getAnnotation(CallbackMethodAnnotation.class);
+            BaseCallbackHandler instance;
+            try {
+                instance = (BaseCallbackHandler) metadata.getDeclaredConstructor().newInstance();
+            } catch (Exception e) {
+                instance = null;
+            }
+
+            if (instance != null) {
+                result.put(annotation.value(), instance);
+            }
+        });
+
+        return result;
     }
 
     @Override
@@ -110,7 +152,6 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     }
 
     private void handleCallbackQuery(CallbackQuery callbackQuery){
-
         Long chatId = callbackQuery.getMessage().getChatId();
         Integer messageId = callbackQuery.getMessage().getMessageId();
 
@@ -155,6 +196,10 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         WeeksCalendarCallbackDto callbackData = jsonMapper.readValue(callbackQuery.getData(), WeeksCalendarCallbackDto.class);
         String messageText = callbackData.getReceivedMessage();
 
+        if (handlers.containsKey(messageText)) {
+            BaseCallbackHandler handler = handlers.get(messageText);
+            handler.handle(this, callbackQuery);
+        }
 
         YearMonth targetData;
         switch (messageText){
