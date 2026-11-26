@@ -1,8 +1,8 @@
 package org.example.telegrambotwb.bot;
 
-import org.example.telegrambotwb.components.BotCommands;
 import org.example.telegrambotwb.components.calendar.TelegramCalendar;
 import org.example.telegrambotwb.config.bot.BotConfig;
+import org.example.telegrambotwb.config.bot.BotCommands;
 import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
 import org.example.telegrambotwb.dto.callback.WeeksCalendarCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
@@ -21,23 +21,25 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageRe
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.example.telegrambotwb.config.bot.BotCommands.*;
+
+
 @Component
-public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands {
+public class TelegramBotWB extends TelegramLongPollingBot {
 
     private final BotConfig botConfig;
     private final TelegramCalendar telegramCalendar;
@@ -45,14 +47,24 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
     private final ReportsService reportsService;
     private final SubscriptionService subscriptionService;
 
-    private static Map<String, BaseCallbackHandler> handlers = scanForHandlers();
+    private final Map<String, BaseCallbackHandler> handlers;
 
     private short year;
     private byte month;
 
-    public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper, ReportsService reportsService, SubscriptionService subscriptionService) {
+    public TelegramBotWB(BotConfig botConfig, TelegramCalendar telegramCalendar, JsonMapper jsonMapper, ReportsService reportsService, SubscriptionService subscriptionService, List<BaseCallbackHandler> handlerList) {
         this.reportsService = reportsService;
         this.subscriptionService = subscriptionService;
+
+        this.handlers = handlerList.stream()
+                .filter(h -> h.getClass().isAnnotationPresent(CallbackMethodAnnotation.class))
+                .collect(Collectors.toMap(
+                        h -> h.getClass().getAnnotation(CallbackMethodAnnotation.class).value(),
+                        Function.identity(),
+                        (existing, replacement) -> {
+                            throw new IllegalStateException(existing.getClass().getName());
+                        }
+                ));
 
         LocalDate now = LocalDate.now();
         year = (short) now.getYear();
@@ -63,50 +75,15 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         this.jsonMapper = jsonMapper;
 
         try {
-            this.execute(new SetMyCommands(LIST_OF_COMMAND, new BotCommandScopeDefault(), null));
+            this.execute(new SetMyCommands(BotCommands.LIST_OF_COMMAND, new BotCommandScopeDefault(), null));
         } catch (TelegramApiException exception){
             System.out.println(exception.getMessage());
         }
 
     }
 
-    private static Map<String, BaseCallbackHandler> scanForHandlers() {
-        Package handlersPackage = BaseCallbackHandler.class.getPackage();
-        InputStream stream = ClassLoader.getSystemClassLoader()
-                .getResourceAsStream(handlersPackage.getName().replaceAll("[.]", "/"));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
 
-        Set<Class> handlersMetadata = reader.lines()
-                .filter(line -> line.endsWith(".class"))
-                .map(line -> {
-                    try {
-                        return Class.forName(handlersPackage.getName() + "." + line.substring(0, line.lastIndexOf('.')));
-                    } catch (ClassNotFoundException e) {
-                        return null;
-                    }
-                })
-                .filter(cls -> cls != null && BaseCallbackHandler.class.isAssignableFrom(cls))
-                .collect(Collectors.toSet());
-
-        Map<String, BaseCallbackHandler> result = new HashMap<>();
-        handlersMetadata.forEach(metadata -> {
-            CallbackMethodAnnotation annotation = (CallbackMethodAnnotation)metadata.getAnnotation(CallbackMethodAnnotation.class);
-            BaseCallbackHandler instance;
-            try {
-                instance = (BaseCallbackHandler) metadata.getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
-                instance = null;
-            }
-
-            if (instance != null) {
-                result.put(annotation.value(), instance);
-            }
-        });
-
-        return result;
-    }
-
-    @Override
+        @Override
     public void onUpdateReceived(Update update) {
 
         Long chatId;
@@ -158,7 +135,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
         String callbackDataStr = callbackQuery.getData();
         String[] parts = callbackDataStr.split("_");
         String payload = parts[parts.length - 1];
-        if (callbackDataStr.startsWith(WEEK_PREFIX)) {
+        if (callbackDataStr.startsWith(BotCommands.WEEK_PREFIX)) {
             CalendarWeekPeriodCallbackDto dto = CalendarWeekPeriodCallbackDto.fromBase64(payload);
             ResponseEntity<byte[]> fileData = reportsService.getWeeklyReport(dto);
 
@@ -174,7 +151,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
 
             sendBytesAsFile(chatId, fileData.getBody(), fileData.getHeaders().getContentDisposition().getFilename());
             return;
-        } else if(callbackDataStr.startsWith(DAY_PREFIX)){
+        } else if(callbackDataStr.startsWith(BotCommands.DAY_PREFIX)){
 
             CalendarDataCallbackDto dto = CalendarDataCallbackDto.fromBase64(payload);
             ResponseEntity<byte[]> fileData = reportsService.getDailyReport(dto);
@@ -217,10 +194,10 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).minusMonths(1);
                 editDaysCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
                 break;
-            case NEXT_PREFIX_WEEKS:
-                targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
-                editWeeksCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
-                break;
+//            case NEXT_PREFIX_WEEKS:
+//                targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
+//                editWeeksCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
+//                break;
             case NEXT_PREFIX_DAYS:
                 targetData = YearMonth.of(callbackData.getYear(), callbackData.getMonth()).plusMonths(1);
                 editDaysCalendar(chatId, messageId, targetData.getYear() , targetData.getMonth().getValue(), callbackData.getShowWeekList());
@@ -382,7 +359,7 @@ public class TelegramBotWB extends TelegramLongPollingBot implements BotCommands
             sendMessage.setText("У вас нет подписок. Нажмите «Добавить селлера».");
 
             List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
-            InlineKeyboardButton button = InlineKeyboardButton.builder().text("Добавить селлера").callbackData(IGNORE_PREFIX).build();
+            InlineKeyboardButton button = InlineKeyboardButton.builder().text("Добавить селлера").callbackData(BotCommands.IGNORE_PREFIX).build();
             buttons.add(List.of(button));
             InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
             markupInline.setKeyboard(buttons);

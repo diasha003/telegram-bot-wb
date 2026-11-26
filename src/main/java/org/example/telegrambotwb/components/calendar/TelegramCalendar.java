@@ -1,13 +1,11 @@
 package org.example.telegrambotwb.components.calendar;
 
-import org.example.telegrambotwb.components.BotCommands;
 import org.example.telegrambotwb.dto.callback.CalendarDataCallbackDto;
 import org.example.telegrambotwb.dto.callback.WeeksCalendarCallbackDto;
 import org.example.telegrambotwb.dto.callback.CalendarWeekPeriodCallbackDto;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.*;
@@ -15,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
 
-import static org.example.telegrambotwb.components.BotCommands.*;
+import static org.example.telegrambotwb.config.bot.BotCommands.*;
 
 @Component
 public class TelegramCalendar {
